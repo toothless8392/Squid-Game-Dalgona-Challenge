@@ -138,42 +138,13 @@ const Crack = (() => {
     }
   }
 
-  // ── 충격파: 반경 내 셀에 직접 데미지 ──
-  function impactRadius(gx, gy) {
-    const N = CFG.GRID;
-    const R = CFG.CLICK_IMPACT_RADIUS;
-
-    for (let dy = -R; dy <= R; dy++) {
-      for (let dx = -R; dx <= R; dx++) {
-        if (dx === 0 && dy === 0) continue; // 중심은 이미 처리됨
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist > R) continue;
-
-        const nx = gx + dx, ny = gy + dy;
-        if (nx < 0 || nx >= N || ny < 0 || ny >= N) continue;
-        if (!Grid.isInCookie(nx, ny) || Grid.isBroken(nx, ny)) continue;
-
-        const nType = Grid.getType(nx, ny);
-        const baseProb = nType === Grid.TYPE_OUTLINE
-          ? CFG.CLICK_IMPACT_OUTLINE_PROB
-          : CFG.CLICK_IMPACT_OTHER_PROB;
-        // 거리에 따라 확률 감소
-        const prob = baseProb * (1 - dist / (R + 1));
-
-        if (Math.random() < prob) {
-          Grid.setHp(nx, ny, Grid.getHp(nx, ny) - 1);
-          Grid.addCrack(nx, ny);
-          markDirty(nx, ny);
-          if (Grid.getHp(nx, ny) <= 0) {
-            breakCell(nx, ny);
-          }
-        }
-      }
-    }
+  // ──────────────────────────────────────────────────────────────────────────────
+  // ──────────────────────────────────────────────────────────────────────────────
+  function vecCosSquare(v1x, v1y, v2x, v2y) {
+    const dot = v1x * v2x + v1y * v2y;
+    return dot * dot / ((v1x * v1x + v1y * v1y) * (v2x * v2x + v2y * v2y));
   }
 
-  // ──────────────────────────────────────────────────────────────────────────────
-  // ──────────────────────────────────────────────────────────────────────────────
   const N = CFG.GRID;
   // visited는 boolean이 아니라 방문한 순서(세대) 저장
   const visited = new Uint8Array(N * N);
@@ -202,6 +173,146 @@ const Crack = (() => {
       const intensity = Grid.TYPE_OUTLINE === t ? 0.8 : 1.1;
       Renderer.shake(intensity);
       return true;
+    }
+  }
+
+  // Pseudo-global variables for propagateCrack
+  let maxDistance = 10;
+  const crackLinePoints = [];
+  const crackLineDirIndices = [];
+
+  function propagateCrack(currX, currY, originX, originY) {
+    if (Math.random() < 0.9) {
+      maxDistance = 6 + (Math.floor(Math.random() * 8) >> 0);
+    } else {
+      maxDistance = 10 + (Math.floor(Math.random() * 10) >> 0);
+    }
+    DFSCrack(currX, currY, originX, originY, 0);
+
+    crackLinePoints.push([currX, currY]);
+
+    for (let i = 0; i < (maxDistance >> 1); ++i) {
+      const idx = crackLineDirIndices[i];
+      const currVisitNo = visited[N * currX + currY];
+      for (const [dx, dy] of NEIGHBOR_DIRECTION) {
+        const neighborX = currX + dx, neighborY = currY + dy;
+        if (neighborX < 0 || neighborX >= N || neighborY < 0 || neighborY >= N || visited[N * neighborX + neighborY]) continue;
+
+        giveDamage(neighborX, neighborY, 100);
+        visited[N * neighborX + neighborY] = currVisitNo;
+        visitIdx.push(N * neighborX + neighborY);
+      }
+
+      currX += NEIGHBOR_DIRECTION[idx][0];
+      currY += NEIGHBOR_DIRECTION[idx][1];
+    }
+
+    // Draw crack with width 3
+    let i = 1, currDirIdx = crackLineDirIndices[0];
+    // for (let i = 1; i < crackLineDirIndices.length; ++i) {
+    //   const nextDirIdx = crackLineDirIndices[i];
+    //   const currVisitNo = visited[N * currX + currY];
+    //   const dx = NEIGHBOR_DIRECTION[currDirIdx][0], dy = NEIGHBOR_DIRECTION[currDirIdx][1];
+    //   if (currDirIdx & 1) { // Diagonal direction
+    //     const nextX = currX + dx, nextY = currY + dy;
+    //     Grid.setBroken(nextX, currY);
+    //     markDirty(nextX, currY);
+    //     visited[N * nextX + currY] = currVisitNo;
+    //     visitIdx.push(N * nextX + currY);
+    //     Grid.setBroken(currX, nextY);
+    //     markDirty(currX, nextY);
+    //     visited[N * currX + nextY] = currVisitNo;
+    //     visitIdx.push(N * currX + nextY);
+
+    //     currX = nextX, currY = nextY;
+    //   }
+    //   else {
+    //     const d1x = dy, d1y = -dx;
+    //     const d2x = -dy, d2y = dx;
+    //     Grid.setBroken(currX + d1x, currY + d1y);
+    //     markDirty(currX + d1x, currY + d1y);
+    //     visited[N * (currX + d1x) + (currY + d1y)] = currVisitNo;
+    //     visitIdx.push(N * (currX + d1x) + (currY + d1y));
+    //     Grid.setBroken(currX + d2x, currY + d2y);
+    //     markDirty(currX + d2x, currY + d2y);
+    //     visited[N * (currX + d2x) + (currY + d2y)] = currVisitNo;
+    //     visitIdx.push(N * (currX + d2x) + (currY + d2y));
+
+    //     currX += dx, currY += dy;
+
+    //     if (nextDirIdx & 1) {
+    //       if (((nextDirIdx + 8 - currDirIdx) & 7) < 4) {  // Left turn
+    //         const d3x = NEIGHBOR_DIRECTION[(nextDirIdx + 5) & 7][0], d3y = NEIGHBOR_DIRECTION[(nextDirIdx + 5) & 7][1];
+    //         Grid.setBroken(currX + d3x, currY + d3y);
+    //         markDirty(currX + d3x, currY + d3y);
+    //         visited[N * (currX + d3x) + (currY + d3y)] = currVisitNo;
+    //         visitIdx.push(N * (currX + d3x) + (currY + d3y));
+    //       }
+    //       else {  // Right turn
+    //         const d3x = NEIGHBOR_DIRECTION[(nextDirIdx + 3) & 7][0], d3y = NEIGHBOR_DIRECTION[(nextDirIdx + 3) & 7][1];
+    //         Grid.setBroken(currX + d3x, currY + d3y);
+    //         markDirty(currX + d3x, currY + d3y);
+    //         visited[N * (currX + d2x) + (currY + d2y)] = currVisitNo;
+    //         visitIdx.push(N * (currX + d3x) + (currY + d3y));
+    //       }
+    //     }
+    //   }
+
+    //   currDirIdx = nextDirIdx;
+    // }
+
+    crackLineDirIndices.length = 0;
+  }
+
+
+  function DFSCrack(currX, currY, originX, originY, dist) {
+    if (dist > maxDistance) return;
+    visited[currX * N + currY] = dist;
+    giveDamage(currX, currY, 100);
+
+    // Reference vector: guideline for crack direction
+    const refX = currX - originX, refY = currY - originY;    
+
+    let nextDirIdx = 0, minHp = 100;
+    for (let i = 0; i < 8; ++i) {
+      const dx = NEIGHBOR_DIRECTION[i][0], dy = NEIGHBOR_DIRECTION[i][1]
+      const nextX = currX + dx, nextY = currY + dy;
+      if (nextX < 0 || nextX >= N || nextY < 0 || nextY >= N || visited[nextX * N + nextY]) continue;
+
+      const dot = refX * dx + refY * dy;
+      if (dot <= 0) continue;
+
+      const nextHp = Grid.getHp(nextX, nextY);
+      if (nextHp < minHp) {
+        minHp = nextHp;
+        nextDirIdx = i;
+      }
+    }
+
+    let d1x = NEIGHBOR_DIRECTION[nextDirIdx][0], d1y = NEIGHBOR_DIRECTION[nextDirIdx][1];    
+    const nextDirIdx2 = (nextDirIdx + 7) & 7, nextDirIdx3 = (nextDirIdx + 9) & 7;
+    const d2x = NEIGHBOR_DIRECTION[nextDirIdx2][0], d2y = NEIGHBOR_DIRECTION[nextDirIdx2][1];
+    const d3x = NEIGHBOR_DIRECTION[nextDirIdx3][0], d3y = NEIGHBOR_DIRECTION[nextDirIdx3][1];
+    const cosSq1 = vecCosSquare(refX, refY, d1x, d1y), 
+          cosSq2 = vecCosSquare(refX, refY, d2x, d2y), 
+          cosSq3 = vecCosSquare(refX, refY, d3x, d3y);
+
+    const r1 = cosSq1 * minHp, r2 = cosSq2 * Grid.getHp(currX + d2x, currY + d2y), r3 = cosSq3 * Grid.getHp(currX + d3x, currY + d3y);
+    const total = r1 + r2 + r3;
+    const p1 = r1 / total, p2 = (r1 + r2) / total;
+
+    const rand = Math.random();
+    if (rand < p1) {
+      DFSCrack(currX + d1x, currY + d1y, originX, originY, dist + 1);
+      crackLineDirIndices.push(nextDirIdx);
+    }
+    else if (rand < p2) {
+      DFSCrack(currX + d2x, currY + d2y, originX, originY, dist + 1);
+      crackLineDirIndices.push(nextDirIdx2);
+    }
+    else {
+      DFSCrack(currX + d3x, currY + d3y, originX, originY, dist + 1);
+      crackLineDirIndices.push(nextDirIdx3);
     }
   }
 
@@ -243,43 +354,46 @@ const Crack = (() => {
       const currHp = Grid.getHp(currX, currY);
       giveDamage(currX, currY, currF);
 
-      if (Grid.isBroken(currX, currY) || Math.random() < 0.05 && !Grid.isBroken(currX, currY)) {
+
+      if (Grid.isBroken(currX, currY)) {
         if (currHp >= 40) {
-          let i = 0, ddx = 0, ddy = 0;
-          for (const [dx, dy] of NEIGHBOR_DIRECTION) {
-            const nextX = currX + dx, nextY = currY + dy;
-            if (nextX < 0 || nextX >= N || nextY < 0 || nextY >= N || visited[nextX * N + nextY]) {
-              i++;
-              visited[nextX * N + nextY] = visited[currKey] + 1;
-              continue;
-            }
+          if (Math.random() < 0.15) propagateCrack(currX, currY, originX, originY);
+          continue;
+          // let i = 0, ddx = 0, ddy = 0;
+          // for (const [dx, dy] of NEIGHBOR_DIRECTION) {
+          //   const nextX = currX + dx, nextY = currY + dy;
+          //   if (nextX < 0 || nextX >= N || nextY < 0 || nextY >= N || visited[nextX * N + nextY]) {
+          //     i++;
+          //     visited[nextX * N + nextY] = visited[currKey] + 1;
+          //     continue;
+          //   }
 
-            const v1x = nextX - originX, v1y = nextY - originY;
-            const dot = v1x * dx + v1y * dy;
-            const cos = dot / Math.sqrt(((v1x * v1x + v1y * v1y) * (dx * dx + dy * dy)));
-            if (cos * 0.5 >= Math.random()) {
-              ddx = dx, ddy = dy;
-            }
-            visited[nextX * N + nextY] = visited[currKey] + 1;
-            i++;
+          //   const v1x = nextX - originX, v1y = nextY - originY;
+          //   const dot = v1x * dx + v1y * dy;
+          //   const cos = dot / Math.sqrt(((v1x * v1x + v1y * v1y) * (dx * dx + dy * dy)));
+          //   if (cos * 0.5 >= Math.random()) {
+          //     ddx = dx, ddy = dy;
+          //   }
+          //   visited[nextX * N + nextY] = visited[currKey] + 1;
+          //   i++;
 
-          }
+          // }
 
-          if (Math.random() < 0.7) {
-            let nextX = currX + ddx, nextY = currY + ddy;
-            giveDamage(nextX, nextY, currF * 2);
-            visited[nextX * N + nextY] = visited[currX * N + currY] + 1;
-            nextX += ddx, nextY += ddy;
-            giveDamage(nextX, nextY, currF * 2);
-            visited[nextX * N + nextY] = visited[currX * N + currY] + 1;
-            ddx *= 3;
-            ddy *= 3;
-          }
-          const nextF = Math.floor(currF * 0.96) >> 0;
-          const nextIdx = N * (currX + ddx) + (currY + ddy);
-          visited[nextIdx] = visited[currKey] + 1;
-          visitIdx.push(nextIdx);
-          queue.push((nextIdx << 8) + nextF);
+          // if (Math.random() < 0.7) {
+          //   let nextX = currX + ddx, nextY = currY + ddy;
+          //   giveDamage(nextX, nextY, currF * 2);
+          //   visited[nextX * N + nextY] = visited[currX * N + currY] + 1;
+          //   nextX += ddx, nextY += ddy;
+          //   giveDamage(nextX, nextY, currF * 2);
+          //   visited[nextX * N + nextY] = visited[currX * N + currY] + 1;
+          //   ddx *= 3;
+          //   ddy *= 3;
+          // }
+          // const nextF = Math.floor(currF * 0.96) >> 0;
+          // const nextIdx = N * (currX + ddx) + (currY + ddy);
+          // visited[nextIdx] = visited[currKey] + 1;
+          // visitIdx.push(nextIdx);
+          // queue.push((nextIdx << 8) + nextF);
         }
         else {
           for (const [dx, dy] of NEIGHBOR_DIRECTION) {
@@ -332,7 +446,7 @@ const Crack = (() => {
     for (const idx of visitIdx) {
       visited[idx] = 0;
     }
-    visited.length = 0;
+    visitIdx.length = 0;
   }
   // ──────────────────────────────────────────────────────────────────────────────
   // ──────────────────────────────────────────────────────────────────────────────

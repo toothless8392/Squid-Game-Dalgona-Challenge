@@ -131,8 +131,8 @@ const Grid = (() => {
 
     let perlin = new PerlinNoise(Date.now());
     const noiseScale = 0.2;
-    const octaves = 1;
-    const persistence = 0.1;
+    const octaves = 6;
+    const persistence = 0.9;
 
 
     hp         = new Int8Array(total);
