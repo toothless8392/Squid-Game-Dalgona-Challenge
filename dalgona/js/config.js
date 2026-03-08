@@ -11,7 +11,7 @@ const CFG = {
   COOKIE_RADIUS_RATIO: 0.45,
   get COOKIE_RADIUS() { return Math.floor(this.GRID * this.COOKIE_RADIUS_RATIO); },
 
-  OUTLINE_THICKNESS: 2.75,
+  OUTLINE_THICKNESS: 4,
   TIME_LIMIT: 75,
 
 
@@ -58,7 +58,7 @@ const CFG = {
   DIAG_DIR: [[1, 1], [-1, 1], [-1, -1], [1, -1]],
 
   PIN_THICKNESS: 4,
-  OUTLINE_HP_INIT: 30,
+  OUTLINE_HP_INIT: 25,
   NORMAL_HP_INIT:  80,
   HP_BUBBLE_CHANCE: 0.4,
   HP_BUBBLE_LOWER_BOUND: 20,

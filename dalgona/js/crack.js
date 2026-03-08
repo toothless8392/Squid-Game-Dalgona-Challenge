@@ -452,7 +452,7 @@ const Crack = (() => {
             const nextX = currX + dx, nextY = currY + dy;
             if (nextX < 0 || nextX >= N || nextY < 0 || nextY >= N || visited[nextX * N + nextY] || Grid.getType(nextX, nextY) !== Grid.TYPE_OUTLINE) continue;
 
-            const nextF = (Math.floor(currF * 0.88) >> 0);
+            const nextF = (Math.floor(currF * 0.97) >> 0);
             const nextIdx = N * nextX + nextY;
             visited[nextIdx] = visited[currKey] + 1;
             visitIdx.push(nextIdx);
@@ -463,7 +463,9 @@ const Crack = (() => {
             const nextX = currX + dx, nextY = currY + dy;
             if (nextX < 0 || nextX >= N || nextY < 0 || nextY >= N || visited[nextX * N + nextY]) continue;
 
-            visited[nextX * N + nextY] = visited[currKey] + 1;
+            const nextIdx = N * nextX + nextY;
+            visited[nextIdx] = visited[currKey] + 1;
+            visitIdx.push(nextIdx);
             giveDamage(nextX, nextY, Math.floor(currF * 0.7));
           }
         }

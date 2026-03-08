@@ -83,40 +83,80 @@ const Shapes = (() => {
     const handleBot = cy + 22 * s;   // 손잡이 하단
     const hookR    = 5 * s;          // 갈고리 반지름
 
-    // ① 돔 상반원 (왼→오, 호)
+    // 돔 상반원 (왼 → 오, 호)
     const domeN = 40;
     for (let i = 0; i <= domeN; i++) {
       const a = Math.PI + (i / domeN) * Math.PI; // π → 2π
       v.push([cx + domeR * Math.cos(a), domeY + domeR * Math.sin(a)]);
     }
 
-    // ② 돔 오른쪽 끝 → 손잡이 오른쪽 상단
-    v.push([cx + handleW, domeY]);
-    // ③ 손잡이 오른쪽 하단
-    v.push([cx + handleW, handleBot]);
-
-    // ④ 갈고리: J-커브 (바깥쪽 호, 오른쪽으로)
-    const hookCx = cx + hookR;
-    const hookN  = 16;
-    for (let i = 0; i <= hookN; i++) {
-      const a = -Math.PI / 2 + (i / hookN) * Math.PI;
-      v.push([
-        hookCx + (hookR + handleW) * Math.cos(a),
-        handleBot + (hookR + handleW) * Math.sin(a)
-      ]);
-    }
-    // 안쪽 호 (역방향)
-    for (let i = hookN; i >= 0; i--) {
-      const a = -Math.PI / 2 + (i / hookN) * Math.PI;
-      v.push([
-        hookCx + Math.max(0, hookR - handleW) * Math.cos(a),
-        handleBot + Math.max(0, hookR - handleW) * Math.sin(a)
-      ]);
+    // 우측 외부 4분원 (오 → 왼)
+    const c1N = 10;
+    const c1R = 5 * Math.SQRT2 * s;
+    let c1X = cx + 17 * s, c1Y = domeY + 5 * s;
+    let a = Math.PI / 4, da = Math.PI / 2 / c1N;
+    for (let i = 0; i < c1N; ++i) {
+      a += da;
+      v.push([c1X + c1R * Math.cos(a), c1Y - c1R * Math.sin(a)]);
     }
 
-    // ⑤ 손잡이 왼쪽 올라가기
-    v.push([cx - handleW, handleBot]);
-    v.push([cx - handleW, domeY]);
+    // 우측 내부 4분원 (오 → 왼)
+    a = Math.PI / 4;
+    c1X -= 10 * s;
+    for (let i = 0; i < c1N; ++i) {
+      a += da;
+      v.push([c1X + c1R * Math.cos(a), c1Y - c1R * Math.sin(a)]);
+    }
+
+    // 우산 기둥과 손잡이 교점
+    v.push([cx + 2 * s, cy + 18 * s]);
+
+    // 손잡이 내부 갈고리 반원 (왼 → 오)
+    const c2N = 20;
+    let c2R = 4 * s;
+    a = Math.PI, da = Math.PI / c2N;
+    let c2X = cx + 6 * s, c2Y = cy + 18 * s;
+    for (let i = 0; i < c2N; ++i) {
+      a -= da;
+      v.push([c2X + c2R * Math.cos(a), c2Y + c2R * Math.sin(a)]);
+    }
+
+    // 손잡이 끝부분 반원 (왼 → 오)
+    a = Math.PI;
+    c2X += 6 * s;
+    c2R /= 2;
+    for (let i = 0; i < c2N; ++i) {
+      a -= da;
+      v.push([c2X + c2R * Math.cos(a), c2Y - c2R * Math.sin(a)]);
+    }
+
+    // 손잡이 외부 갈고리 반원 (오 → 왼)
+    a = 0;
+    c2X -= 6 * s;
+    c2R *= 4;
+    for (let i = 0; i < c2N; ++i) {
+      a += da;
+      v.push([c2X + c2R * Math.cos(a), c2Y + c2R * Math.sin(a)]);
+    }
+
+    // 기둥과 사분원 교점
+    v.push([cx - 2 * s, cy - 4 * s]);
+
+    // 좌측 내부 사분원 (오 → 왼)
+    a = Math.PI / 4;
+    c1X = cx - 7 * s;
+    for (let i = 0; i < c1N; ++i) {
+      a += da;
+      v.push([c1X + c1R * Math.cos(a), c1Y - c1R * Math.sin(a)]);
+    }
+
+    // 좌측 외부 사분원 (오 → 왼)
+    a = Math.PI / 4;
+    c1X -= 10 * s;
+    for (let i = 0; i < c1N; ++i) {
+      a += da;
+      v.push([c1X + c1R * Math.cos(a), c1Y - c1R * Math.sin(a)]);
+    }
 
     return v;
   }
