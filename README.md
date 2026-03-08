@@ -1,56 +1,56 @@
-# 달고나 뽑기 게임
+# Dalgona Challenge
 
-브라우저에서 즐기는 달고나 뽑기 시뮬레이션. 윤곽선을 따라 클릭해 모양을 뽑아내세요.
+A browser-based game inspired by the iconic dalgona candy challenge from **Squid Game** — carefully crack along the outline to extract the shape without breaking it.
 
-## 플레이 방법
+## How to Play
 
-1. 원하는 모양을 선택하거나 직접 그리세요
-2. 윤곽선을 따라 클릭해 균열을 냅니다
-3. 윤곽선을 99% 이상 부수면 성공
-4. 내부를 18% 이상 부수면 실패
-5. 제한 시간 75초 안에 완료하세요
+1. Pick a shape or draw your own
+2. Click along the outline to crack the candy
+3. Break 99% of the outline to win
+4. Break more than 18% of the interior and you lose
+5. Complete it within 75 seconds
 
-## 조작법
+## Controls
 
-- **클릭**: 해당 위치에 균열 발생
-- **핥기**: 균열 발생 시 1회 사용 가능 — 균열을 메워 위기를 넘깁니다
+- **Click**: Apply pressure and crack the candy at that spot
+- **Lick**: Available once per game when a crack appears — lick the candy to seal it and recover
 
-## 모양
+## Shapes
 
-| 모양 | 아이콘 |
-|------|--------|
-| 별   | ⭐ |
-| 하트 | ❤️ |
-| 원   | ⭕ |
-| 우산 | ☂️ |
-| 삼각형 | 🔺 |
-| 직접 그리기 | ✏️ |
+| Shape | Icon |
+|-------|------|
+| Star | ⭐ |
+| Heart | ❤️ |
+| Circle | ⭕ |
+| Umbrella | ☂️ |
+| Triangle | 🔺 |
+| Custom Draw | ✏️ |
 
-### 직접 그리기 모드
+### Custom Draw Mode
 
-- 마우스를 드래그해 자유롭게 선을 그립니다
-- 여러 획을 이어 그릴 수 있습니다
-- **완료** 버튼을 누르면 그린 모양으로 게임을 시작합니다
-- **지우기** 버튼으로 초기화, **뒤로** 버튼으로 모양 선택 화면으로 돌아갑니다
+- Drag the mouse to draw freely on the canvas
+- Multiple strokes are supported
+- Press **Done** to start the game with your drawing
+- **Clear** resets the canvas, **Back** returns to shape selection
 
-## 실행
+## Running
 
-`dalgona/index.html`을 브라우저에서 열면 바로 플레이할 수 있습니다. 별도 서버나 빌드 과정이 필요 없습니다.
+Open `dalgona/index.html` in any browser. No server or build step required.
 
-## 파일 구조
+## File Structure
 
 ```
 dalgona/
 ├── index.html
 └── js/
-    ├── config.js      # 게임 설정 상수
-    ├── shapes.js      # 도형 SDF 정의
-    ├── grid.js        # 셀 그리드 초기화 및 통계
-    ├── crack.js       # 균열 전파 로직
-    ├── renderer.js    # 캔버스 렌더링
-    ├── particles.js   # 파티클 이펙트
-    ├── audio.js       # 효과음
-    ├── input.js       # 마우스/터치 입력
-    ├── game.js        # 게임 상태 관리
-    └── main.js        # 초기화 및 UI 연결
+    ├── config.js      # Game constants
+    ├── shapes.js      # Shape SDF definitions
+    ├── grid.js        # Cell grid initialization and stats
+    ├── crack.js       # Crack propagation logic
+    ├── renderer.js    # Canvas rendering
+    ├── particles.js   # Particle effects
+    ├── audio.js       # Sound effects
+    ├── input.js       # Mouse/touch input
+    ├── game.js        # Game state management
+    └── main.js        # Initialization and UI wiring
 ```
